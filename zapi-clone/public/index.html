@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MinhaAPI — Painel</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f4f0;--surface:#fff;--surface2:#f0efe9;--border:#e2e0d8;--text:#1a1916;--text2:#6b6960;--text3:#9b9a94;--green:#16a34a;--green-bg:#dcfce7;--yellow:#ca8a04;--yellow-bg:#fef9c3;--red:#dc2626;--red-bg:#fee2e2;--blue:#2563eb;--blue-bg:#dbeafe;--accent:#1a1916;--radius:12px;--shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);--shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04)}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:8px;position:fixed;top:0;left:0;bottom:0}
+.logo{display:flex;align-items:center;gap:10px;padding:0 8px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.logo-icon{width:32px;height:32px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-text{font-weight:600;font-size:15px;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;font-size:14px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.sidebar-bottom{margin-top:auto;padding-top:16px;border-top:1px solid var(--border)}
+.main{margin-left:220px;flex:1;padding:32px;max-width:calc(100vw - 220px)}
+.page{display:none}.page.active{display:block}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-.4px}
+.page-sub{font-size:14px;color:var(--text3);margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:'DM Sans',sans-serif}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{opacity:.85}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--border)}
+.btn-sm{padding:6px 12px;font-size:13px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow)}
+.stat-label{font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:28px;font-weight:600;letter-spacing:-.5px;margin-top:6px}
+.stat-desc{font-size:12px;color:var(--text3);margin-top:4px}
+.instances-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.instance-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;transition:box-shadow .2s}
+.instance-card:hover{box-shadow:var(--shadow-md)}
+.instance-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.instance-name{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.instance-id{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;font-size:12px;font-weight:500}
+.badge-green{background:var(--green-bg);color:var(--green)}
+.badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+.badge-red{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.instance-info{margin-bottom:16px}
+.instance-info-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border)}
+.instance-info-row:last-child{border-bottom:none}
+.instance-info-label{color:var(--text3)}
+.instance-info-value{font-weight:500;font-family:'DM Mono',monospace;font-size:12px}
+.instance-actions{display:flex;gap:8px;flex-wrap:wrap}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.15);transform:translateY(10px);transition:transform .2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;border-radius:6px}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+.modal-body{padding:24px}
+.qr-container{display:flex;flex-direction:column;align-items:center;gap:16px}
+.qr-box{width:220px;height:220px;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);overflow:hidden}
+.qr-box img{width:100%;height:100%;object-fit:contain;padding:8px}
+.qr-status{font-size:13px;color:var(--text2);text-align:center}
+.qr-token{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);word-break:break-all;width:100%}
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.form-input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);transition:border-color .15s;outline:none}
+.form-input:focus{border-color:var(--accent)}
+textarea.form-input{resize:vertical;min-height:80px}
+.form-hint{font-size:12px;color:var(--text3);margin-top:5px}
+.toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:8px;z-index:999}
+.toast{background:var(--text);color:#fff;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-md);animation:slideIn .2s ease}
+.toast.success{background:var(--green)}.toast.error{background:var(--red)}
+@keyframes slideIn{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.result-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);white-space:pre-wrap;word-break:break-all;min-height:60px;margin-top:12px}
+.send-section{max-width:560px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-header{padding:18px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:600}
+.card-body{padding:20px}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">MinhaAPI</div>
+        <div class="logo-sub" id="api-url-display">localhost:3000</div>
+      </div>
+    </div>
+    <button class="nav-item active" id="nav-instances" onclick="showPage('instances')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Instâncias
+    </button>
+    <button class="nav-item" id="nav-send" onclick="showPage('send')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Enviar Mensagem
+    </button>
+    <button class="nav-item" id="nav-config" onclick="showPage('config')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Configurações
+    </button>
+    <div class="sidebar-bottom">
+      <div style="font-size:11px;color:var(--text3);padding:0 8px">v1.0.0</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page active" id="page-instances">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Instâncias</div>
+          <div class="page-sub">Gerencie suas conexões WhatsApp</div>
+        </div>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova Instância
+        </button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">—</div><div class="stat-desc">instâncias criadas</div></div>
+        <div class="stat-card"><div class="stat-label">Conectadas</div><div class="stat-value" style="color:var(--green)" id="stat-connected">—</div><div class="stat-desc">ativas agora</div></div>
+        <div class="stat-card"><div class="stat-label">Desconectadas</div><div class="stat-value" style="color:var(--text3)" id="stat-disconnected">—</div><div class="stat-desc">offline</div></div>
+      </div>
+      <div id="instances-container">
+        <div class="empty-state"><div class="spinner" style="margin:0 auto 16px"></div><div>Carregando...</div></div>
+      </div>
+    </div>
+
+    <div class="page" id="page-send">
+      <div class="page-header">
+        <div><div class="page-title">Enviar Mensagem</div><div class="page-sub">Teste o envio pelas suas instâncias</div></div>
+      </div>
+      <div class="send-section">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Mensagem de texto</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">Instância</label>
+              <select class="form-input" id="send-instance"><option value="">Selecione uma instância...</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Número destino</label>
+              <input class="form-input" id="send-phone" placeholder="5511999999999" type="tel">
+              <div class="form-hint">DDI + DDD + número</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Mensagem</label>
+              <textarea class="form-input" id="send-message" placeholder="Digite sua mensagem..."></textarea>
+            </div>
+            <button class="btn btn-primary" id="btn-send" onclick="sendMessage()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Enviar
+            </button>
+            <div id="send-result" class="result-box" style="display:none"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="page" id="page-config">
+      <div class="page-header">
+        <div><div class="page-title">Configurações</div><div class="page-sub">Configure a conexão com sua API</div></div>
+      </div>
+      <div style="max-width:560px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Conexão da API</div></div>
+          <div class="card-body">
+            <div class="form-group">
+              <label class="form-label">URL da API</label>
+              <input class="form-input" id="cfg-url" placeholder="https://sua-api.app.github.dev">
+              <div class="form-hint">URL base onde sua API está rodando</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Master API Key</label>
+              <input class="form-input" id="cfg-key" type="password" placeholder="sua-api-key">
+            </div>
+            <button class="btn btn-primary" onclick="saveConfig()">Salvar e Conectar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Create Modal -->
+<div class="modal-overlay" id="modal-create" onclick="handleOverlayClick(event,'modal-create')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Nova Instância</div>
+      <button class="modal-close" onclick="closeModal('modal-create')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="new-name" placeholder="minha-loja">
+        <div class="form-hint">Apenas letras, números, hífens e underscores</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Webhook URL (opcional)</label>
+        <input class="form-input" id="new-webhook" placeholder="https://seusite.com/webhook">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="closeModal('modal-create')">Cancelar</button>
+        <button class="btn btn-primary" onclick="createInstance()">Criar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="modal-qr" onclick="handleOverlayClick(event,'modal-qr')">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="qr-title">Conectar WhatsApp</div>
+      <button class="modal-close" onclick="closeQrModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="qr-container">
+        <div class="qr-box" id="qr-box"><div class="spinner"></div></div>
+        <div class="qr-status" id="qr-status">Aguardando QR Code...</div>
+        <div style="width:100%">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Token da instância</div>
+          <div class="qr-token" id="qr-token-display">—</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="copyToken()">Copiar token</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+var API_URL = localStorage.getItem('api_url') || '';
+var API_KEY = localStorage.getItem('api_key') || '';
+var qrInterval = null;
+var qrToken = null;
+
+window.onload = function() {
+  document.getElementById('cfg-url').value = API_URL;
+  document.getElementById('cfg-key').value = API_KEY;
+  if (API_URL) document.getElementById('api-url-display').textContent = API_URL.replace('https://','').replace('http://','').split('/')[0];
+  if (API_KEY && API_URL) {
+    loadInstances();
+  } else {
+    showPage('config');
+  }
+};
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  if (page === 'instances') loadInstances();
+  if (page === 'send') loadInstancesForSend();
+}
+
+function saveConfig() {
+  API_URL = document.getElementById('cfg-url').value.replace(/\/$/, '');
+  API_KEY = document.getElementById('cfg-key').value;
+  localStorage.setItem('api_url', API_URL);
+  localStorage.setItem('api_key', API_KEY);
+  document.getElementById('api-url-display').textContent = API_URL.replace('https://','').replace('http://','').split('/')[0];
+  toast('Configurações salvas!', 'success');
+  showPage('instances');
+}
+
+async function apiFetch(path, options) {
+  options = options || {};
+  var res = await fetch(API_URL + '/api/v1' + path, Object.assign({}, options, {
+    headers: Object.assign({ 'Content-Type': 'application/json', 'x-api-key': API_KEY }, options.headers || {})
+  }));
+  return res.json();
+}
+
+async function loadInstances() {
+  if (!API_KEY || !API_URL) return;
+  try {
+    var data = await apiFetch('/instances');
+    var instances = data.instances || [];
+    var connected = instances.filter(function(i){ return i.status === 'CONNECTED'; }).length;
+    document.getElementById('stat-total').textContent = instances.length;
+    document.getElementById('stat-connected').textContent = connected;
+    document.getElementById('stat-disconnected').textContent = instances.length - connected;
+    var container = document.getElementById('instances-container');
+    if (instances.length === 0) {
+      container.innerHTML = '<div class="empty-state"><div class="empty-icon">📱</div><div class="empty-title">Nenhuma instância</div><div class="empty-desc">Clique em Nova Instância para começar</div></div>';
+      return;
+    }
+    container.innerHTML = '<div class="instances-grid">' + instances.map(renderCard).join('') + '</div>';
+  } catch(e) {
+    document.getElementById('instances-container').innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro de conexão</div><div class="empty-desc">Verifique a URL e API Key nas configurações</div></div>';
+  }
+}
+
+function statusBadge(s) {
+  if (s==='CONNECTED') return '<span class="badge badge-green"><span class="badge-dot"></span>Conectado</span>';
+  if (s==='QR_CODE') return '<span class="badge badge-yellow"><span class="badge-dot"></span>QR Code</span>';
+  if (s==='CONNECTING') return '<span class="badge badge-blue"><span class="badge-dot"></span>Conectando</span>';
+  return '<span class="badge badge-red"><span class="badge-dot"></span>Desconectado</span>';
+}
+
+function renderCard(inst) {
+  var isConn = inst.status === 'CONNECTED';
+  return '<div class="instance-card">' +
+    '<div class="instance-header"><div><div class="instance-name">' + inst.name + '</div><div class="instance-id">' + inst.id.substring(0,8) + '...</div></div>' + statusBadge(inst.status) + '</div>' +
+    '<div class="instance-info">' +
+      '<div class="instance-info-row"><span class="instance-info-label">Número</span><span class="instance-info-value">' + (inst.phone || '—') + '</span></div>' +
+      '<div class="instance-info-row"><span class="instance-info-label">Nome</span><span class="instance-info-value">' + (inst.profileName || '—') + '</span></div>' +
+    '</div>' +
+    '<div class="instance-actions">' +
+      (!isConn ? '<button class="btn btn-secondary btn-sm" onclick="openQrModal(\'' + inst.name + '\')">QR Code</button>' : '') +
+      '<button class="btn btn-secondary btn-sm" onclick="restartInstance(\'' + inst.name + '\')">Reiniciar</button>' +
+      (isConn ? '<button class="btn btn-secondary btn-sm" onclick="disconnectInstance(\'' + inst.name + '\')">Desconectar</button>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+function openCreateModal() { document.getElementById('modal-create').classList.add('open'); setTimeout(function(){ document.getElementById('new-name').focus(); }, 100); }
+
+async function createInstance() {
+  var name = document.getElementById('new-name').value.trim();
+  var webhook = document.getElementById('new-webhook').value.trim();
+  if (!name) { toast('Digite um nome', 'error'); return; }
+  try {
+    var data = await apiFetch('/instances', { method: 'POST', body: JSON.stringify({ name: name, webhookUrl: webhook || undefined }) });
+    if (data.error) { toast(data.error, 'error'); return; }
+    closeModal('modal-create');
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-webhook').value = '';
+    toast('Instância "' + name + '" criada!', 'success');
+    qrToken = data.token;
+    setTimeout(function(){ openQrModal(name, data.token); }, 400);
+    loadInstances();
+  } catch(e) { toast('Erro ao criar', 'error'); }
+}
+
+async function openQrModal(instanceName, token) {
+  document.getElementById('qr-title').textContent = 'Conectar: ' + instanceName;
+  document.getElementById('qr-box').innerHTML = '<div class="spinner"></div>';
+  document.getElementById('qr-status').textContent = 'Aguardando QR Code...';
+  document.getElementById('qr-token-display').textContent = token || '...';
+  qrToken = token;
+  document.getElementById('modal-qr').classList.add('open');
+  loadQr(instanceName, token);
+  if (qrInterval) clearInterval(qrInterval);
+  qrInterval = setInterval(function(){ loadQr(instanceName, token); loadInstances(); }, 5000);
+}
+
+function loadQr(name, token) {
+  if (!token) return;
+  var url = API_URL + '/api/v1/instances/' + name + '/qrcode.png?token=' + token + '&t=' + Date.now();
+  var img = new Image();
+  img.onload = function() {
+    document.getElementById('qr-box').innerHTML = '<img src="' + url + '" alt="QR">';
+    document.getElementById('qr-status').textContent = 'Escaneie com o WhatsApp → Aparelhos Conectados';
+  };
+  img.src = url;
+}
+
+function closeQrModal() { clearInterval(qrInterval); closeModal('modal-qr'); loadInstances(); }
+function copyToken() { navigator.clipboard.writeText(document.getElementById('qr-token-display').textContent); toast('Token copiado!', 'success'); }
+
+async function restartInstance(name) {
+  try { await apiFetch('/instances/' + name + '/restart', { method: 'POST' }); toast('Reiniciando...'); setTimeout(loadInstances, 2000); }
+  catch(e) { toast('Erro', 'error'); }
+}
+
+async function disconnectInstance(name) {
+  try { await apiFetch('/instances/' + name + '/disconnect', { method: 'POST' }); toast('Desconectado'); setTimeout(loadInstances, 1000); }
+  catch(e) { toast('Erro', 'error'); }
+}
+
+async function loadInstancesForSend() {
+  try {
+    var data = await apiFetch('/instances');
+    var sel = document.getElementById('send-instance');
+    var instances = (data.instances || []).filter(function(i){ return i.status === 'CONNECTED'; });
+    sel.innerHTML = '<option value="">Selecione...</option>' + instances.map(function(i){ return '<option value="' + i.name + '">' + i.name + ' (' + (i.phone || 'conectado') + ')</option>'; }).join('');
+  } catch(e) {}
+}
+
+async function sendMessage() {
+  var instance = document.getElementById('send-instance').value;
+  var phone = document.getElementById('send-phone').value.trim();
+  var message = document.getElementById('send-message').value.trim();
+  var btn = document.getElementById('btn-send');
+  var result = document.getElementById('send-result');
+  if (!instance) { toast('Selecione uma instância', 'error'); return; }
+  if (!phone) { toast('Digite o número', 'error'); return; }
+  if (!message) { toast('Digite a mensagem', 'error'); return; }
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  result.style.display = 'none';
+  try {
+    var res = await fetch(API_URL + '/api/v1/instances/' + instance + '/messages/text', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      body: JSON.stringify({ phone: phone, message: message })
+    });
+    var data = await res.json();
+    result.style.display = 'block';
+    result.textContent = JSON.stringify(data, null, 2);
+    if (data.sent || data.queued) toast('Enviado!', 'success');
+    else toast(data.error || 'Erro', 'error');
+  } catch(e) { result.style.display = 'block'; result.textContent = 'Erro: ' + e.message; toast('Erro', 'error'); }
+  btn.disabled = false; btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Enviar';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function handleOverlayClick(e, id) { if (e.target === e.currentTarget) { if (id === 'modal-qr') closeQrModal(); else closeModal(id); } }
+
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3000);
+}
+
+setInterval(function(){ if (document.getElementById('page-instances').classList.contains('active') && API_KEY) loadInstances(); }, 15000);
+</script>
+</body>
+</html>

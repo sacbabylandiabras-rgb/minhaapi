@@ -1,0 +1,67 @@
+version: '3.9'
+
+services:
+  app:
+    build: .
+    container_name: zapi-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/zapiclone
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_KEY=${API_KEY:-changeme}
+      - SESSIONS_DIR=/app/sessions
+    volumes:
+      - ./sessions:/app/sessions
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - zapi-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: zapi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zapiclone
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zapi-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: zapi-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - zapi-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  zapi-network:
+    driver: bridge
